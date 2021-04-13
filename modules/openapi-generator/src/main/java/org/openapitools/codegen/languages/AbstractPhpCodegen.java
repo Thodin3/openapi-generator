@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -27,16 +27,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import static org.openapitools.codegen.utils.StringUtils.camelize;
 import static org.openapitools.codegen.utils.StringUtils.underscore;
 
 public abstract class AbstractPhpCodegen extends DefaultCodegen implements CodegenConfig {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPhpCodegen.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(AbstractPhpCodegen.class);
 
     public static final String VARIABLE_NAMING_CONVENTION = "variableNamingConvention";
     public static final String PACKAGE_NAME = "packageName";
@@ -97,7 +96,7 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
         );
 
         instantiationTypes.put("array", "array");
-        instantiationTypes.put("map", "map");
+        instantiationTypes.put("map", "array");
 
 
         // provide primitives to mustache template
@@ -118,7 +117,7 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
         typeMapping.put("Date", "\\DateTime");
         typeMapping.put("DateTime", "\\DateTime");
         typeMapping.put("file", "\\SplFileObject");
-        typeMapping.put("map", "map");
+        typeMapping.put("map", "array");
         typeMapping.put("array", "array");
         typeMapping.put("list", "array");
         typeMapping.put("object", "object");
@@ -126,6 +125,7 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
         typeMapping.put("ByteArray", "string");
         typeMapping.put("UUID", "string");
         typeMapping.put("URI", "string");
+        typeMapping.put("AnyType", "mixed");
 
         cliOptions.add(new CliOption(CodegenConstants.MODEL_PACKAGE, CodegenConstants.MODEL_PACKAGE_DESC));
         cliOptions.add(new CliOption(CodegenConstants.API_PACKAGE, CodegenConstants.API_PACKAGE_DESC));
@@ -217,7 +217,7 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
         // supportingFiles.add(new SupportingFile("LICENSE", "", "LICENSE"));
 
         // all PHP codegens requires Composer, it means that we need to exclude from SVN at least vendor folder
-        supportingFiles.add(new SupportingFile(".gitignore", "", ".gitignore"));
+        supportingFiles.add(new SupportingFile("gitignore", "", ".gitignore"));
     }
 
     public String getPackageName() {
@@ -300,12 +300,12 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
             }
             return getTypeDeclaration(inner) + "[]";
         } else if (ModelUtils.isMapSchema(p)) {
-            Schema inner = ModelUtils.getAdditionalProperties(p);
+            Schema inner = getAdditionalProperties(p);
             if (inner == null) {
                 LOGGER.warn(p.getName() + "(map property) does not have a proper inner type defined. Default to string");
                 inner = new StringSchema().description("TODO default missing map inner type to string");
             }
-            return getSchemaType(p) + "[string," + getTypeDeclaration(inner) + "]";
+            return getSchemaType(p) + "<string," + getTypeDeclaration(inner) + ">";
         } else if (StringUtils.isNotBlank(p.get$ref())) { // model
             String type = super.getTypeDeclaration(p);
             return (!languageSpecificPrimitives.contains(type))
@@ -396,8 +396,7 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
         return toVarName(name);
     }
 
-    @Override
-    public String toModelName(String name) {
+    private String toGenericName(String name) {
         // remove [
         name = name.replaceAll("\\]", "");
 
@@ -418,6 +417,13 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
             LOGGER.warn(name + " (model name starts with number) cannot be used as model name. Renamed to " + camelize("model_" + name));
             name = "model_" + name; // e.g. 200Response => Model200Response (after camelize)
         }
+
+        return name;
+    }
+
+    @Override
+    public String toModelName(String name) {
+        name = toGenericName(name);
 
         // add prefix and/or suffic only if name does not start wth \ (e.g. \DateTime)
         if (!name.matches("^\\\\.*")) {
@@ -589,9 +595,9 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
 
         if (example == null) {
             example = "NULL";
-        } else if (Boolean.TRUE.equals(p.isListContainer)) {
+        } else if (Boolean.TRUE.equals(p.isArray)) {
             example = "array(" + example + ")";
-        } else if (Boolean.TRUE.equals(p.isMapContainer)) {
+        } else if (Boolean.TRUE.equals(p.isMap)) {
             example = "array('key' => " + example + ")";
         }
 
@@ -646,7 +652,7 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
 
     @Override
     public String toEnumName(CodegenProperty property) {
-        String enumName = underscore(toModelName(property.name)).toUpperCase(Locale.ROOT);
+        String enumName = underscore(toGenericName(property.name)).toUpperCase(Locale.ROOT);
 
         // remove [] for array or map of enum
         enumName = enumName.replace("[]", "");
@@ -671,7 +677,7 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
         for (CodegenOperation op : operationList) {
             // for API test method name
             // e.g. public function test{{vendorExtensions.x-testOperationId}}()
-            op.vendorExtensions.put("x-testOperationId", camelize(op.operationId));
+            op.vendorExtensions.put("x-test-operation-id", camelize(op.operationId));
         }
         return objs;
     }
@@ -743,8 +749,10 @@ public abstract class AbstractPhpCodegen extends DefaultCodegen implements Codeg
                 } else {
                     LOGGER.info("Successfully executed: " + command);
                 }
-            } catch (Exception e) {
+            } catch (InterruptedException | IOException e) {
                 LOGGER.error("Error running the command ({}). Exception: {}", command, e.getMessage());
+                // Restore interrupted state
+                Thread.currentThread().interrupt();
             }
         }
     }

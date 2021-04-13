@@ -12,12 +12,12 @@
 
 
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Pet {
     #[serde(rename = "id", skip_serializing_if = "Option::is_none")]
     pub id: Option<i64>,
     #[serde(rename = "category", skip_serializing_if = "Option::is_none")]
-    pub category: Option<crate::models::Category>,
+    pub category: Option<Box<crate::models::Category>>,
     #[serde(rename = "name")]
     pub name: String,
     #[serde(rename = "photoUrls")]
@@ -44,7 +44,7 @@ impl Pet {
 }
 
 /// pet status in the store
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum Status {
     #[serde(rename = "available")]
     Available,

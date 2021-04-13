@@ -1,8 +1,8 @@
 # Rust API client for {{{packageName}}}
 
-{{#appDescription}}
-{{{appDescription}}}
-{{/appDescription}}
+{{#appDescriptionWithNewLines}}
+{{{appDescriptionWithNewLines}}}
+{{/appDescriptionWithNewLines}}
 
 ## Overview
 
@@ -48,5 +48,5 @@ cargo doc --open
 
 ## Author
 
-{{#apiInfo}}{{#apis}}{{^hasMore}}{{{infoEmail}}}
-{{/hasMore}}{{/apis}}{{/apiInfo}}
+{{#apiInfo}}{{#apis}}{{#-last}}{{{infoEmail}}}
+{{/-last}}{{/apis}}{{/apiInfo}}

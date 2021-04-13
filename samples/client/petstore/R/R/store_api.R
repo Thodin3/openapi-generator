@@ -57,7 +57,7 @@
 #'
 #' \itemize{
 #' \item \emph{ @param } order.id integer
-#' \item \emph{ @returnType } \link[petstore:Order]{ Order }   \cr
+#' \item \emph{ @returnType } \link{Order} \cr
 #'
 #'
 #' \item status code : 200 | successful operation
@@ -87,8 +87,8 @@
 #' 
 #'
 #' \itemize{
-#' \item \emph{ @param } body \link[petstore:Order]{ Order }
-#' \item \emph{ @returnType } \link[petstore:Order]{ Order }   \cr
+#' \item \emph{ @param } body \link{Order}
+#' \item \emph{ @returnType } \link{Order} \cr
 #'
 #'
 #' \item status code : 200 | successful operation
@@ -111,7 +111,7 @@
 #'
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' ####################  DeleteOrder  ####################
 #'
 #' library(petstore)
@@ -160,7 +160,7 @@
 #'
 #' }
 #' @importFrom R6 R6Class
-#' @importFrom caTools base64encode
+#' @importFrom base64enc base64encode
 #' @export
 StoreApi <- R6::R6Class(
   'StoreApi',
@@ -197,6 +197,7 @@ StoreApi <- R6::R6Class(
         stop("Missing required parameter `order.id`.")
       }
 
+      body <- NULL
       urlPath <- "/store/order/{orderId}"
       if (!missing(`order.id`)) {
         urlPath <- gsub(paste0("\\{", "orderId", "\\}"), URLencode(as.character(`order.id`), reserved = TRUE), urlPath)
@@ -239,6 +240,7 @@ StoreApi <- R6::R6Class(
       queryParams <- list()
       headerParams <- c()
 
+      body <- NULL
       urlPath <- "/store/inventory"
       # API key authentication
       if ("api_key" %in% names(self$apiClient$apiKeys) && nchar(self$apiClient$apiKeys["api_key"]) > 0) {
@@ -254,7 +256,7 @@ StoreApi <- R6::R6Class(
 
       if (httr::status_code(resp) >= 200 && httr::status_code(resp) <= 299) {
         deserializedRespObj <- tryCatch(
-          self$apiClient$deserialize(resp, "map(integer)", "package:petstore"),
+          self$apiClient$deserialize(resp, "map(integer)", loadNamespace("petstore")),
           error = function(e){
              stop("Failed to deserialize response")
           }
@@ -291,6 +293,7 @@ StoreApi <- R6::R6Class(
         stop("Missing required parameter `order.id`.")
       }
 
+      body <- NULL
       urlPath <- "/store/order/{orderId}"
       if (!missing(`order.id`)) {
         urlPath <- gsub(paste0("\\{", "orderId", "\\}"), URLencode(as.character(`order.id`), reserved = TRUE), urlPath)
@@ -306,7 +309,7 @@ StoreApi <- R6::R6Class(
 
       if (httr::status_code(resp) >= 200 && httr::status_code(resp) <= 299) {
         deserializedRespObj <- tryCatch(
-          self$apiClient$deserialize(resp, "Order", "package:petstore"),
+          self$apiClient$deserialize(resp, "Order", loadNamespace("petstore")),
           error = function(e){
              stop("Failed to deserialize response")
           }
@@ -360,7 +363,7 @@ StoreApi <- R6::R6Class(
 
       if (httr::status_code(resp) >= 200 && httr::status_code(resp) <= 299) {
         deserializedRespObj <- tryCatch(
-          self$apiClient$deserialize(resp, "Order", "package:petstore"),
+          self$apiClient$deserialize(resp, "Order", loadNamespace("petstore")),
           error = function(e){
              stop("Failed to deserialize response")
           }

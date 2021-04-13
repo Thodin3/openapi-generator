@@ -59,15 +59,15 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TimeZone;
 
+
 import org.openapitools.client.auth.Authentication;
 import org.openapitools.client.auth.HttpBasicAuth;
-import org.openapitools.client.auth.HttpBearerAuth;
 import org.openapitools.client.auth.ApiKeyAuth;
 import org.openapitools.client.auth.OAuth;
 
-
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
 @Component("org.openapitools.client.ApiClient")
-public class ApiClient {
+public class ApiClient extends JavaTimeFormatter {
     public enum CollectionFormat {
         CSV(","), TSV("\t"), SSV(" "), PIPES("|"), MULTI(null);
 
@@ -76,7 +76,7 @@ public class ApiClient {
             this.separator = separator;
         }
 
-        private String collectionToString(Collection<? extends CharSequence> collection) {
+        private String collectionToString(Collection<?> collection) {
             return StringUtils.collectionToDelimitedString(collection, separator);
         }
     }
@@ -162,91 +162,81 @@ public class ApiClient {
         return authentications.get(authName);
     }
 
-    /**
-     * Helper method to set token for HTTP bearer authentication.
-     * @param bearerToken the token
-     */
-    public void setBearerToken(String bearerToken) {
-      for (Authentication auth : authentications.values()) {
-        if (auth instanceof HttpBearerAuth) {
-          ((HttpBearerAuth) auth).setBearerToken(bearerToken);
-          return;
-        }
+
+  /**
+   * Helper method to set username for the first HTTP basic authentication.
+   * @param username Username
+   */
+  public void setUsername(String username) {
+    for (Authentication auth : authentications.values()) {
+      if (auth instanceof HttpBasicAuth) {
+        ((HttpBasicAuth) auth).setUsername(username);
+        return;
       }
-      throw new RuntimeException("No Bearer authentication configured!");
     }
+    throw new RuntimeException("No HTTP basic authentication configured!");
+  }
 
-    /**
-     * Helper method to set username for the first HTTP basic authentication.
-     * @param username the username
-     */
-    public void setUsername(String username) {
-        for (Authentication auth : authentications.values()) {
-            if (auth instanceof HttpBasicAuth) {
-                ((HttpBasicAuth) auth).setUsername(username);
-                return;
-            }
-        }
-        throw new RuntimeException("No HTTP basic authentication configured!");
+  /**
+   * Helper method to set password for the first HTTP basic authentication.
+   * @param password Password
+   */
+  public void setPassword(String password) {
+    for (Authentication auth : authentications.values()) {
+      if (auth instanceof HttpBasicAuth) {
+        ((HttpBasicAuth) auth).setPassword(password);
+        return;
+      }
     }
+    throw new RuntimeException("No HTTP basic authentication configured!");
+  }
 
-    /**
-     * Helper method to set password for the first HTTP basic authentication.
-     * @param password the password
-     */
-    public void setPassword(String password) {
-        for (Authentication auth : authentications.values()) {
-            if (auth instanceof HttpBasicAuth) {
-                ((HttpBasicAuth) auth).setPassword(password);
-                return;
-            }
-        }
-        throw new RuntimeException("No HTTP basic authentication configured!");
+
+  /**
+   * Helper method to set API key value for the first API key authentication.
+   * @param apiKey the API key
+   */
+  public void setApiKey(String apiKey) {
+    for (Authentication auth : authentications.values()) {
+      if (auth instanceof ApiKeyAuth) {
+        ((ApiKeyAuth) auth).setApiKey(apiKey);
+        return;
+      }
     }
+    throw new RuntimeException("No API key authentication configured!");
+  }
 
-    /**
-     * Helper method to set API key value for the first API key authentication.
-     * @param apiKey the API key
-     */
-    public void setApiKey(String apiKey) {
-        for (Authentication auth : authentications.values()) {
-            if (auth instanceof ApiKeyAuth) {
-                ((ApiKeyAuth) auth).setApiKey(apiKey);
-                return;
-            }
-        }
-        throw new RuntimeException("No API key authentication configured!");
+  /**
+   * Helper method to set API key prefix for the first API key authentication.
+   * @param apiKeyPrefix API key prefix
+   */
+  public void setApiKeyPrefix(String apiKeyPrefix) {
+    for (Authentication auth : authentications.values()) {
+      if (auth instanceof ApiKeyAuth) {
+        ((ApiKeyAuth) auth).setApiKeyPrefix(apiKeyPrefix);
+        return;
+      }
     }
+    throw new RuntimeException("No API key authentication configured!");
+  }
 
-    /**
-     * Helper method to set API key prefix for the first API key authentication.
-     * @param apiKeyPrefix the API key prefix
-     */
-    public void setApiKeyPrefix(String apiKeyPrefix) {
-        for (Authentication auth : authentications.values()) {
-            if (auth instanceof ApiKeyAuth) {
-                ((ApiKeyAuth) auth).setApiKeyPrefix(apiKeyPrefix);
-                return;
-            }
-        }
-        throw new RuntimeException("No API key authentication configured!");
+
+  /**
+   * Helper method to set access token for the first OAuth2 authentication.
+   * @param accessToken Access token
+   */
+  public void setAccessToken(String accessToken) {
+    for (Authentication auth : authentications.values()) {
+      if (auth instanceof OAuth) {
+        ((OAuth) auth).setAccessToken(accessToken);
+        return;
+      }
     }
+    throw new RuntimeException("No OAuth2 authentication configured!");
+  }
 
-    /**
-     * Helper method to set access token for the first OAuth2 authentication.
-     * @param accessToken the access token
-     */
-    public void setAccessToken(String accessToken) {
-        for (Authentication auth : authentications.values()) {
-            if (auth instanceof OAuth) {
-                ((OAuth) auth).setAccessToken(accessToken);
-                return;
-            }
-        }
-        throw new RuntimeException("No OAuth2 authentication configured!");
-    }
 
-    /**
+     /**
      * Set the User-Agent header's value (by adding to the default header map).
      * @param userAgent the user agent string
      * @return ApiClient this client
@@ -374,6 +364,8 @@ public class ApiClient {
             return "";
         } else if (param instanceof Date) {
             return formatDate( (Date) param);
+        } else if (param instanceof OffsetDateTime) {
+            return formatOffsetDateTime((OffsetDateTime) param);
         } else if (param instanceof Collection) {
             StringBuilder b = new StringBuilder();
             for(Object o : (Collection<?>) param) {
@@ -395,7 +387,7 @@ public class ApiClient {
     * @param values The values of the parameter.
     * @return String representation of the parameter
     */
-    public String collectionPathParameterToString(CollectionFormat collectionFormat, Collection<? extends CharSequence> values) {
+    public String collectionPathParameterToString(CollectionFormat collectionFormat, Collection<?> values) {
         // create the value based on the collection format
         if (CollectionFormat.MULTI.equals(collectionFormat)) {
             // not valid for path params
@@ -488,6 +480,15 @@ public class ApiClient {
     }
 
     /**
+    * Check if the given {@code String} is a Problem JSON MIME (RFC-7807).
+    * @param mediaType the input MediaType
+    * @return boolean true if the MediaType represents Problem JSON, false otherwise
+    */
+    public boolean isProblemJsonMime(String mediaType) {
+        return "application/problem+json".equalsIgnoreCase(mediaType);
+    }
+
+    /**
      * Select the Accept header's value from the given accepts array:
      *     if JSON exists in the given array, use it;
      *     otherwise use all of them (joining into a string)
@@ -501,7 +502,7 @@ public class ApiClient {
         }
         for (String accept : accepts) {
             MediaType mediaType = MediaType.parseMediaType(accept);
-            if (isJsonMime(mediaType)) {
+            if (isJsonMime(mediaType) && !isProblemJsonMime(accept)) {
                 return Collections.singletonList(mediaType);
             }
         }
@@ -588,7 +589,7 @@ public class ApiClient {
             builder.queryParams(queryParams);
         }
 
-		URI uri;
+        URI uri;
         try {
             uri = new URI(builder.build().toUriString());
         } catch(URISyntaxException ex)  {
@@ -647,14 +648,20 @@ public class ApiClient {
         }
     }
 
+    /**
+     * Build cookie header. Keeps a single value per cookie (as per <a href="https://tools.ietf.org/html/rfc6265#section-5.3">
+     * RFC6265 section 5.3</a>).
+     *
+     * @param cookies map all cookies
+     * @return header string for cookies.
+     */
     private String buildCookieHeader(MultiValueMap<String, String> cookies) {
         final StringBuilder cookieValue = new StringBuilder();
         String delimiter = "";
         for (final Map.Entry<String, List<String>> entry : cookies.entrySet()) {
-            for (String value : entry.getValue()) {
-                cookieValue.append(String.format("%s%s=%s", delimiter, entry.getKey(), entry.getValue()));
-                delimiter = "; ";
-            }
+            final String value = entry.getValue().get(entry.getValue().size() - 1);
+            cookieValue.append(String.format("%s%s=%s", delimiter, entry.getKey(), value));
+            delimiter = "; ";
         }
         return cookieValue.toString();
     }
@@ -696,7 +703,7 @@ public class ApiClient {
      * @param queryParams The query parameters
      * @param headerParams The header parameters
      */
-    private void updateParamsForAuth(String[] authNames, MultiValueMap<String, String> queryParams, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams) {
+    protected void updateParamsForAuth(String[] authNames, MultiValueMap<String, String> queryParams, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams) {
         for (String authName : authNames) {
             Authentication auth = authentications.get(authName);
             if (auth == null) {

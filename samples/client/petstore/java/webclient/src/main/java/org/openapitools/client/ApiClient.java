@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TimeZone;
+import java.time.OffsetDateTime;
 
 import org.openapitools.client.auth.Authentication;
 import org.openapitools.client.auth.HttpBasicAuth;
@@ -64,8 +65,8 @@ import org.openapitools.client.auth.HttpBearerAuth;
 import org.openapitools.client.auth.ApiKeyAuth;
 import org.openapitools.client.auth.OAuth;
 
-
-public class ApiClient {
+@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen")
+public class ApiClient extends JavaTimeFormatter {
     public enum CollectionFormat {
         CSV(","), TSV("\t"), SSV(" "), PIPES("|"), MULTI(null);
 
@@ -74,7 +75,7 @@ public class ApiClient {
             this.separator = separator;
         }
 
-        private String collectionToString(Collection<? extends CharSequence> collection) {
+        private String collectionToString(Collection<?> collection) {
             return StringUtils.collectionToDelimitedString(collection, separator);
         }
     }
@@ -135,8 +136,8 @@ public class ApiClient {
     }
 
     /**
-    * Build the RestTemplate used to make HTTP requests.
-    * @return RestTemplate
+    * Build the WebClient used to make HTTP requests.
+    * @return WebClient
     */
     public static WebClient buildWebClient(ObjectMapper mapper) {
         ExchangeStrategies strategies = ExchangeStrategies
@@ -346,6 +347,8 @@ public class ApiClient {
             return "";
         } else if (param instanceof Date) {
             return formatDate( (Date) param);
+        } else if (param instanceof OffsetDateTime) {
+            return formatOffsetDateTime((OffsetDateTime) param);
         } else if (param instanceof Collection) {
             StringBuilder b = new StringBuilder();
             for(Object o : (Collection<?>) param) {
@@ -464,11 +467,11 @@ public class ApiClient {
      *     otherwise use the first one of the array.
      *
      * @param contentTypes The Content-Type array to select from
-     * @return MediaType The Content-Type header to use. If the given array is empty, JSON will be used.
+     * @return MediaType The Content-Type header to use. If the given array is empty, null will be returned.
      */
     public MediaType selectHeaderContentType(String[] contentTypes) {
         if (contentTypes.length == 0) {
-            return MediaType.APPLICATION_JSON;
+            return null;
         }
         for (String contentType : contentTypes) {
             MediaType mediaType = MediaType.parseMediaType(contentType);
@@ -488,18 +491,18 @@ public class ApiClient {
      */
     protected BodyInserter<?, ? super ClientHttpRequest> selectBody(Object obj, MultiValueMap<String, Object> formParams, MediaType contentType) {
         if(MediaType.APPLICATION_FORM_URLENCODED.equals(contentType)) {
-            MultiValueMap<String, String> map = new LinkedMultiValueMap();
+            MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
 
             formParams
                     .toSingleValueMap()
                     .entrySet()
-                    .forEach(es -> map.add(es.getKey(), (String) es.getValue()));
+                    .forEach(es -> map.add(es.getKey(), String.valueOf(es.getValue())));
 
             return BodyInserters.fromFormData(map);
         } else if(MediaType.MULTIPART_FORM_DATA.equals(contentType)) {
             return BodyInserters.fromMultipartData(formParams);
         } else {
-            return obj != null ? BodyInserters.fromObject(obj) : null;
+            return obj != null ? BodyInserters.fromValue(obj) : null;
         }
     }
 
@@ -509,6 +512,7 @@ public class ApiClient {
      * @param <T> the return type to use
      * @param path The sub-path of the HTTP URL
      * @param method The request method
+     * @param pathParams The path parameters
      * @param queryParams The query parameters
      * @param body The request body object
      * @param headerParams The header parameters
@@ -519,8 +523,8 @@ public class ApiClient {
      * @param returnType The return type into which to deserialize the response
      * @return The response body in chosen type
      */
-    public <T> Mono<T> invokeAPI(String path, HttpMethod method, MultiValueMap<String, String> queryParams, Object body, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams, MultiValueMap<String, Object> formParams, List<MediaType> accept, MediaType contentType, String[] authNames, ParameterizedTypeReference<T> returnType) throws RestClientException {
-        final WebClient.RequestBodySpec requestBuilder = prepareRequest(path, method, queryParams, body, headerParams, cookieParams, formParams, accept, contentType, authNames);
+    public <T> Mono<T> invokeAPI(String path, HttpMethod method, Map<String, Object> pathParams, MultiValueMap<String, String> queryParams, Object body, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams, MultiValueMap<String, Object> formParams, List<MediaType> accept, MediaType contentType, String[] authNames, ParameterizedTypeReference<T> returnType) throws RestClientException {
+        final WebClient.RequestBodySpec requestBuilder = prepareRequest(path, method, pathParams, queryParams, body, headerParams, cookieParams, formParams, accept, contentType, authNames);
         return requestBuilder.retrieve().bodyToMono(returnType);
     }
 
@@ -530,6 +534,7 @@ public class ApiClient {
      * @param <T> the return type to use
      * @param path The sub-path of the HTTP URL
      * @param method The request method
+     * @param pathParams The path parameters
      * @param queryParams The query parameters
      * @param body The request body object
      * @param headerParams The header parameters
@@ -540,32 +545,20 @@ public class ApiClient {
      * @param returnType The return type into which to deserialize the response
      * @return The response body in chosen type
      */
-    public <T> Flux<T> invokeFluxAPI(String path, HttpMethod method, MultiValueMap<String, String> queryParams, Object body, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams, MultiValueMap<String, Object> formParams, List<MediaType> accept, MediaType contentType, String[] authNames, ParameterizedTypeReference<T> returnType) throws RestClientException {
-        final WebClient.RequestBodySpec requestBuilder = prepareRequest(path, method, queryParams, body, headerParams, cookieParams, formParams, accept, contentType, authNames);
+    public <T> Flux<T> invokeFluxAPI(String path, HttpMethod method, Map<String, Object> pathParams, MultiValueMap<String, String> queryParams, Object body, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams, MultiValueMap<String, Object> formParams, List<MediaType> accept, MediaType contentType, String[] authNames, ParameterizedTypeReference<T> returnType) throws RestClientException {
+        final WebClient.RequestBodySpec requestBuilder = prepareRequest(path, method, pathParams, queryParams, body, headerParams, cookieParams, formParams, accept, contentType, authNames);
         return requestBuilder.retrieve().bodyToFlux(returnType);
     }
 
-    private WebClient.RequestBodySpec prepareRequest(String path, HttpMethod method, MultiValueMap<String, String> queryParams, Object body, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams, MultiValueMap<String, Object> formParams, List<MediaType> accept, MediaType contentType, String[] authNames) {
+    private WebClient.RequestBodySpec prepareRequest(String path, HttpMethod method, Map<String, Object> pathParams, MultiValueMap<String, String> queryParams, Object body, HttpHeaders headerParams, MultiValueMap<String, String> cookieParams, MultiValueMap<String, Object> formParams, List<MediaType> accept, MediaType contentType, String[] authNames) {
         updateParamsForAuth(authNames, queryParams, headerParams, cookieParams);
 
         final UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(basePath).path(path);
         if (queryParams != null) {
-            //encode the query parameters in case they contain unsafe characters
-            for (List<String> values : queryParams.values()) {
-                if (values != null) {
-                    for (int i = 0; i < values.size(); i++) {
-                        try {
-                            values.set(i, URLEncoder.encode(values.get(i), "utf8"));
-                        } catch (UnsupportedEncodingException e) {
-
-                        }
-                    }
-                }
-            }
             builder.queryParams(queryParams);
         }
 
-        final WebClient.RequestBodySpec requestBuilder = webClient.method(method).uri(builder.build(true).toUri());
+        final WebClient.RequestBodySpec requestBuilder = webClient.method(method).uri(builder.build(false).toUriString(), pathParams);
         if(accept != null) {
             requestBuilder.accept(accept.toArray(new MediaType[accept.size()]));
         }
@@ -632,55 +625,25 @@ public class ApiClient {
         }
     }
 
-    private class ApiClientHttpRequestInterceptor implements ClientHttpRequestInterceptor {
-        private final Log log = LogFactory.getLog(ApiClientHttpRequestInterceptor.class);
-
-        @Override
-        public ClientHttpResponse intercept(HttpRequest request, byte[] body, ClientHttpRequestExecution execution) throws IOException {
-            logRequest(request, body);
-            ClientHttpResponse response = execution.execute(request, body);
-            logResponse(response);
-            return response;
+    /**
+    * Formats the specified collection path parameter to a string value.
+    *
+    * @param collectionFormat The collection format of the parameter.
+    * @param values The values of the parameter.
+    * @return String representation of the parameter
+    */
+    public String collectionPathParameterToString(CollectionFormat collectionFormat, Collection<?> values) {
+        // create the value based on the collection format
+        if (CollectionFormat.MULTI.equals(collectionFormat)) {
+            // not valid for path params
+            return parameterToString(values);
         }
 
-        private void logRequest(HttpRequest request, byte[] body) throws UnsupportedEncodingException {
-            log.info("URI: " + request.getURI());
-            log.info("HTTP Method: " + request.getMethod());
-            log.info("HTTP Headers: " + headersToString(request.getHeaders()));
-            log.info("Request Body: " + new String(body, StandardCharsets.UTF_8));
-        }
+         // collectionFormat is assumed to be "csv" by default
+         if(collectionFormat == null) {
+             collectionFormat = CollectionFormat.CSV;
+         }
 
-        private void logResponse(ClientHttpResponse response) throws IOException {
-            log.info("HTTP Status Code: " + response.getRawStatusCode());
-            log.info("Status Text: " + response.getStatusText());
-            log.info("HTTP Headers: " + headersToString(response.getHeaders()));
-            log.info("Response Body: " + bodyToString(response.getBody()));
-        }
-
-        private String headersToString(HttpHeaders headers) {
-            StringBuilder builder = new StringBuilder();
-            for(Entry<String, List<String>> entry : headers.entrySet()) {
-                builder.append(entry.getKey()).append("=[");
-                for(String value : entry.getValue()) {
-                    builder.append(value).append(",");
-                }
-                builder.setLength(builder.length() - 1); // Get rid of trailing comma
-                builder.append("],");
-            }
-            builder.setLength(builder.length() - 1); // Get rid of trailing comma
-            return builder.toString();
-        }
-
-        private String bodyToString(InputStream body) throws IOException {
-            StringBuilder builder = new StringBuilder();
-            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(body, StandardCharsets.UTF_8));
-            String line = bufferedReader.readLine();
-            while (line != null) {
-                builder.append(line).append(System.lineSeparator());
-                line = bufferedReader.readLine();
-            }
-            bufferedReader.close();
-            return builder.toString();
-        }
+         return collectionFormat.collectionToString(values);
     }
 }

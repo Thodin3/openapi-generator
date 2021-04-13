@@ -13,6 +13,7 @@ package org.openapitools.client.models
 
 
 import com.squareup.moshi.Json
+
 /**
  * An order for a pets from the pet store
  * @param id 
@@ -31,22 +32,19 @@ data class Order (
     @Json(name = "quantity")
     val quantity: kotlin.Int? = null,
     @Json(name = "shipDate")
-    val shipDate: org.threeten.bp.LocalDateTime? = null,
+    val shipDate: org.threeten.bp.OffsetDateTime? = null,
     /* Order Status */
     @Json(name = "status")
     val status: Order.Status? = null,
     @Json(name = "complete")
     val complete: kotlin.Boolean? = null
-) 
+) {
 
-
-{
     /**
-    * Order Status
-    * Values: placed,approved,delivered
-    */
-    
-    enum class Status(val value: kotlin.String){
+     * Order Status
+     * Values: placed,approved,delivered
+     */
+    enum class Status(val value: kotlin.String) {
         @Json(name = "placed") placed("placed"),
         @Json(name = "approved") approved("approved"),
         @Json(name = "delivered") delivered("delivered");

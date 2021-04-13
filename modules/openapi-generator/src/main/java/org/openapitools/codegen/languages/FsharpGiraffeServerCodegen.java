@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -25,6 +25,7 @@ import org.openapitools.codegen.CodegenType;
 import org.openapitools.codegen.meta.GeneratorMetadata;
 import org.openapitools.codegen.meta.Stability;
 import org.openapitools.codegen.SupportingFile;
+import org.openapitools.codegen.meta.features.DocumentationFeature;
 import org.openapitools.codegen.utils.URLPathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,8 @@ public class FsharpGiraffeServerCodegen extends AbstractFSharpCodegen {
 
     public FsharpGiraffeServerCodegen() {
         super();
+
+        modifyFeatureSet(features -> features.includeDocumentationFeatures(DocumentationFeature.Readme));
 
         generatorMetadata = GeneratorMetadata.newBuilder(generatorMetadata)
                 .stability(Stability.BETA)
@@ -173,7 +176,6 @@ public class FsharpGiraffeServerCodegen extends AbstractFSharpCodegen {
     @Override
     public void processOpts() {
         super.processOpts();
-        boolean isLibrary = false;
 
         if (additionalProperties.containsKey(CodegenConstants.OPTIONAL_PROJECT_GUID)) {
             setPackageGuid((String) additionalProperties.get(CodegenConstants.OPTIONAL_PROJECT_GUID));
@@ -187,10 +189,6 @@ public class FsharpGiraffeServerCodegen extends AbstractFSharpCodegen {
         }
 
         additionalProperties.put(PROJECT_SDK, projectSdk);
-
-        // TODO - should we be supporting a Giraffe class library?
-        if (isLibrary)
-            LOGGER.warn("Library flag not currently supported.");
 
         String authFolder = sourceFolder + File.separator + "auth";
         String implFolder = sourceFolder + File.separator + "impl";
@@ -231,7 +229,7 @@ public class FsharpGiraffeServerCodegen extends AbstractFSharpCodegen {
         return outputFolder + File.separator + sourceFolder + File.separator + "impl";
     }
 
-    @Override()
+    @Override
     public String toModelImport(String name) {
         return packageName + "." + modelPackage() + "." + name;
     }
@@ -282,4 +280,17 @@ public class FsharpGiraffeServerCodegen extends AbstractFSharpCodegen {
     public String toRegularExpression(String pattern) {
         return escapeText(pattern);
     }
+
+    @Override
+    public void postProcess() {
+        System.out.println("################################################################################");
+        System.out.println("# Thanks for using OpenAPI Generator.                                          #");
+        System.out.println("# Please consider donation to help us maintain this project \uD83D\uDE4F                 #");
+        System.out.println("# https://opencollective.com/openapi_generator/donate                          #");
+        System.out.println("#                                                                              #");
+        System.out.println("# This generator's contributed by Nick Fisher (https://github.com/nmfisher)    #");
+        System.out.println("# Please support his work directly via https://paypal.me/nickfisher1984 \uD83D\uDE4F     #");
+        System.out.println("################################################################################");
+    }
+
 }

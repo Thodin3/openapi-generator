@@ -18,7 +18,7 @@
 #' 
 #'
 #' \itemize{
-#' \item \emph{ @param } body \link[petstore:Pet]{ Pet }
+#' \item \emph{ @param } body \link{Pet}
 #'
 #'
 #' \item status code : 405 | Invalid input
@@ -52,7 +52,7 @@
 #'
 #' \itemize{
 #' \item \emph{ @param } status Enum < [available, pending, sold] > 
-#' \item \emph{ @returnType } \link[petstore:Pet]{ list(Pet) }   \cr
+#' \item \emph{ @returnType } list( \link{Pet} ) \cr
 #'
 #'
 #' \item status code : 200 | successful operation
@@ -76,7 +76,7 @@
 #'
 #' \itemize{
 #' \item \emph{ @param } tags list( character )
-#' \item \emph{ @returnType } \link[petstore:Pet]{ list(Pet) }   \cr
+#' \item \emph{ @returnType } list( \link{Pet} ) \cr
 #'
 #'
 #' \item status code : 200 | successful operation
@@ -100,7 +100,7 @@
 #'
 #' \itemize{
 #' \item \emph{ @param } pet.id integer
-#' \item \emph{ @returnType } \link[petstore:Pet]{ Pet }   \cr
+#' \item \emph{ @returnType } \link{Pet} \cr
 #'
 #'
 #' \item status code : 200 | successful operation
@@ -130,7 +130,7 @@
 #' 
 #'
 #' \itemize{
-#' \item \emph{ @param } body \link[petstore:Pet]{ Pet }
+#' \item \emph{ @param } body \link{Pet}
 #'
 #'
 #' \item status code : 400 | Invalid ID supplied
@@ -181,7 +181,7 @@
 #' \item \emph{ @param } pet.id integer
 #' \item \emph{ @param } additional.metadata character
 #' \item \emph{ @param } file data.frame
-#' \item \emph{ @returnType } \link[petstore:ApiResponse]{ ModelApiResponse }   \cr
+#' \item \emph{ @returnType } \link{ModelApiResponse} \cr
 #'
 #'
 #' \item status code : 200 | successful operation
@@ -197,7 +197,7 @@
 #'
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' ####################  AddPet  ####################
 #'
 #' library(petstore)
@@ -317,7 +317,7 @@
 #'
 #' }
 #' @importFrom R6 R6Class
-#' @importFrom caTools base64encode
+#' @importFrom base64enc base64encode
 #' @export
 PetApi <- R6::R6Class(
   'PetApi',
@@ -406,6 +406,7 @@ PetApi <- R6::R6Class(
 
       headerParams['api_key'] <- `api.key`
 
+      body <- NULL
       urlPath <- "/pet/{petId}"
       if (!missing(`pet.id`)) {
         urlPath <- gsub(paste0("\\{", "petId", "\\}"), URLencode(as.character(`pet.id`), reserved = TRUE), urlPath)
@@ -456,6 +457,7 @@ PetApi <- R6::R6Class(
 
       queryParams['status'] <- status
 
+      body <- NULL
       urlPath <- "/pet/findByStatus"
       # OAuth token
       headerParams['Authorization'] <- paste("Bearer", self$apiClient$accessToken, sep=" ")
@@ -469,7 +471,7 @@ PetApi <- R6::R6Class(
 
       if (httr::status_code(resp) >= 200 && httr::status_code(resp) <= 299) {
         deserializedRespObj <- tryCatch(
-          self$apiClient$deserialize(resp, "array[Pet]", "package:petstore"),
+          self$apiClient$deserialize(resp, "array[Pet]", loadNamespace("petstore")),
           error = function(e){
              stop("Failed to deserialize response")
           }
@@ -508,6 +510,7 @@ PetApi <- R6::R6Class(
 
       queryParams['tags'] <- tags
 
+      body <- NULL
       urlPath <- "/pet/findByTags"
       # OAuth token
       headerParams['Authorization'] <- paste("Bearer", self$apiClient$accessToken, sep=" ")
@@ -521,7 +524,7 @@ PetApi <- R6::R6Class(
 
       if (httr::status_code(resp) >= 200 && httr::status_code(resp) <= 299) {
         deserializedRespObj <- tryCatch(
-          self$apiClient$deserialize(resp, "array[Pet]", "package:petstore"),
+          self$apiClient$deserialize(resp, "array[Pet]", loadNamespace("petstore")),
           error = function(e){
              stop("Failed to deserialize response")
           }
@@ -558,6 +561,7 @@ PetApi <- R6::R6Class(
         stop("Missing required parameter `pet.id`.")
       }
 
+      body <- NULL
       urlPath <- "/pet/{petId}"
       if (!missing(`pet.id`)) {
         urlPath <- gsub(paste0("\\{", "petId", "\\}"), URLencode(as.character(`pet.id`), reserved = TRUE), urlPath)
@@ -577,7 +581,7 @@ PetApi <- R6::R6Class(
 
       if (httr::status_code(resp) >= 200 && httr::status_code(resp) <= 299) {
         deserializedRespObj <- tryCatch(
-          self$apiClient$deserialize(resp, "Pet", "package:petstore"),
+          self$apiClient$deserialize(resp, "Pet", loadNamespace("petstore")),
           error = function(e){
              stop("Failed to deserialize response")
           }
@@ -739,7 +743,7 @@ PetApi <- R6::R6Class(
 
       if (httr::status_code(resp) >= 200 && httr::status_code(resp) <= 299) {
         deserializedRespObj <- tryCatch(
-          self$apiClient$deserialize(resp, "ModelApiResponse", "package:petstore"),
+          self$apiClient$deserialize(resp, "ModelApiResponse", loadNamespace("petstore")),
           error = function(e){
              stop("Failed to deserialize response")
           }

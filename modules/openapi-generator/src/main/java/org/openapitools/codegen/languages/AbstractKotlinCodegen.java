@@ -6,7 +6,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ *     https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,7 @@ package org.openapitools.codegen.languages;
 
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.StringSchema;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.openapitools.codegen.CliOption;
@@ -32,18 +33,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.openapitools.codegen.utils.StringUtils.*;
 
 public abstract class AbstractKotlinCodegen extends DefaultCodegen implements CodegenConfig {
 
-    public static final String SERIALIZATION_LIBRARY_DESC = "What serialization library to use: 'moshi' (default), or 'gson'";
+    public static final String SERIALIZATION_LIBRARY_DESC = "What serialization library to use: 'moshi' (default), or 'gson' or 'jackson'";
 
-    public enum SERIALIZATION_LIBRARY_TYPE {moshi, gson}
+    public enum SERIALIZATION_LIBRARY_TYPE {moshi, gson, jackson, kotlinx_serialization}
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractKotlinCodegen.class);
+    public static final String MODEL_MUTABLE = "modelMutable";
+    public static final String MODEL_MUTABLE_DESC = "Create mutable models";
+
+    private final Logger LOGGER = LoggerFactory.getLogger(AbstractKotlinCodegen.class);
 
     protected String artifactId;
     protected String artifactVersion = "1.0.0";
@@ -67,7 +74,9 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
 
     public AbstractKotlinCodegen() {
         super();
+
         supportsInheritance = true;
+        setSortModelPropertiesByRequiredFlag(true);
 
         languageSpecificPrimitives = new HashSet<String>(Arrays.asList(
                 "kotlin.Byte",
@@ -89,58 +98,24 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
         // this includes hard reserved words defined by https://github.com/JetBrains/kotlin/blob/master/core/descriptors/src/org/jetbrains/kotlin/renderer/KeywordStringsGenerated.java
         // as well as keywords from https://kotlinlang.org/docs/reference/keyword-reference.html
         reservedWords = new HashSet<String>(Arrays.asList(
-                "abstract",
-                "annotation",
                 "as",
                 "break",
-                "case",
-                "catch",
                 "class",
-                "companion",
-                "const",
-                "constructor",
                 "continue",
-                "crossinline",
-                "data",
-                "delegate",
                 "do",
                 "else",
-                "enum",
-                "external",
                 "false",
-                "final",
-                "finally",
                 "for",
                 "fun",
                 "if",
                 "in",
-                "infix",
-                "init",
-                "inline",
-                "inner",
                 "interface",
-                "internal",
                 "is",
-                "it",
-                "lateinit",
-                "lazy",
-                "noinline",
                 "null",
                 "object",
-                "open",
-                "operator",
-                "out",
-                "override",
                 "package",
-                "private",
-                "protected",
-                "public",
-                "reified",
                 "return",
-                "sealed",
                 "super",
-                "suspend",
-                "tailrec",
                 "this",
                 "throw",
                 "true",
@@ -149,7 +124,6 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
                 "typeof",
                 "val",
                 "var",
-                "vararg",
                 "when",
                 "while"
         ));
@@ -179,7 +153,8 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
         typeMapping.put("double", "kotlin.Double");
         typeMapping.put("ByteArray", "kotlin.ByteArray");
         typeMapping.put("number", "java.math.BigDecimal");
-        typeMapping.put("date-time", "java.time.LocalDateTime");
+        typeMapping.put("decimal", "java.math.BigDecimal");
+        typeMapping.put("date-time", "java.time.OffsetDateTime");
         typeMapping.put("date", "java.time.LocalDate");
         typeMapping.put("file", "java.io.File");
         typeMapping.put("array", "kotlin.Array");
@@ -187,22 +162,22 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
         typeMapping.put("set", "kotlin.collections.Set");
         typeMapping.put("map", "kotlin.collections.Map");
         typeMapping.put("object", "kotlin.Any");
-        typeMapping.put("binary", "kotlin.Array<kotlin.Byte>");
+        typeMapping.put("binary", "kotlin.ByteArray");
         typeMapping.put("Date", "java.time.LocalDate");
-        typeMapping.put("DateTime", "java.time.LocalDateTime");
+        typeMapping.put("DateTime", "java.time.OffsetDateTime");
 
-        instantiationTypes.put("array", "kotlin.arrayOf");
-        instantiationTypes.put("list", "kotlin.arrayOf");
-        instantiationTypes.put("map", "kotlin.mapOf");
+        instantiationTypes.put("array", "kotlin.collections.ArrayList");
+        instantiationTypes.put("list", "kotlin.collections.ArrayList");
+        instantiationTypes.put("map", "kotlin.collections.HashMap");
 
         importMapping = new HashMap<String, String>();
         importMapping.put("BigDecimal", "java.math.BigDecimal");
         importMapping.put("UUID", "java.util.UUID");
         importMapping.put("URI", "java.net.URI");
         importMapping.put("File", "java.io.File");
-        importMapping.put("Date", "java.util.Date");
+        importMapping.put("Date", "java.time.LocalDate");
         importMapping.put("Timestamp", "java.sql.Timestamp");
-        importMapping.put("DateTime", "java.time.LocalDateTime");
+        importMapping.put("DateTime", "java.time.OffsetDateTime");
         importMapping.put("LocalDateTime", "java.time.LocalDateTime");
         importMapping.put("LocalDate", "java.time.LocalDate");
         importMapping.put("LocalTime", "java.time.LocalTime");
@@ -225,6 +200,10 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
 
         cliOptions.add(new CliOption(CodegenConstants.PARCELIZE_MODELS, CodegenConstants.PARCELIZE_MODELS_DESC));
         cliOptions.add(new CliOption(CodegenConstants.SERIALIZABLE_MODEL, CodegenConstants.SERIALIZABLE_MODEL_DESC));
+        cliOptions.add(new CliOption(CodegenConstants.SORT_PARAMS_BY_REQUIRED_FLAG, CodegenConstants.SORT_PARAMS_BY_REQUIRED_FLAG_DESC));
+        cliOptions.add(new CliOption(CodegenConstants.SORT_MODEL_PROPERTIES_BY_REQUIRED_FLAG, CodegenConstants.SORT_MODEL_PROPERTIES_BY_REQUIRED_FLAG_DESC));
+
+        cliOptions.add(CliOption.newBoolean(MODEL_MUTABLE, MODEL_MUTABLE_DESC, false));
     }
 
     @Override
@@ -332,15 +311,23 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
      */
     @Override
     public String getTypeDeclaration(Schema p) {
-        if (ModelUtils.isArraySchema(p)) {
-            return getArrayTypeDeclaration((ArraySchema) p);
-        } else if (ModelUtils.isMapSchema(p)) {
-            Schema inner = ModelUtils.getAdditionalProperties(p);
-
-            // Maps will be keyed only by primitive Kotlin string
-            return getSchemaType(p) + "<kotlin.String, " + getTypeDeclaration(inner) + ">";
+        Schema<?> schema = ModelUtils.unaliasSchema(this.openAPI, p, importMapping);
+        Schema<?> target = ModelUtils.isGenerateAliasAsModel() ? p : schema;
+        if (ModelUtils.isArraySchema(target)) {
+            Schema<?> items = getSchemaItems((ArraySchema) schema);
+            return getSchemaType(target) + "<" + getTypeDeclaration(items) + ">";
+        } else if (ModelUtils.isMapSchema(target)) {
+            // Note: ModelUtils.isMapSchema(p) returns true when p is a composed schema that also defines
+            // additionalproperties: true
+            Schema<?> inner = getAdditionalProperties(target);
+            if (inner == null) {
+                LOGGER.error("`{}` (map property) does not have a proper inner type defined. Default to type:string", p.getName());
+                inner = new StringSchema().description("TODO default missing map inner type to string");
+                p.setAdditionalProperties(inner);
+            }
+            return getSchemaType(target) + "<kotlin.String, " + getTypeDeclaration(inner) + ">";
         }
-        return super.getTypeDeclaration(p);
+        return super.getTypeDeclaration(target);
     }
 
     @Override
@@ -360,6 +347,10 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
         for (Object _mo : models) {
             Map<String, Object> mo = (Map<String, Object>) _mo;
             CodegenModel cm = (CodegenModel) mo.get("model");
+            if (cm.getDiscriminator() != null) {
+                cm.vendorExtensions.put("x-has-data-class-body", true);
+                break;
+            }
 
             for (CodegenProperty var : cm.vars) {
                 if (var.isEnum || isSerializableModel()) {
@@ -434,22 +425,25 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
         }
 
         if (additionalProperties.containsKey(CodegenConstants.SERIALIZABLE_MODEL)) {
-            this.setSerializableModel(Boolean.valueOf((String) additionalProperties.get(CodegenConstants.SERIALIZABLE_MODEL)));
+            this.setSerializableModel(convertPropertyToBooleanAndWriteBack(CodegenConstants.SERIALIZABLE_MODEL));
         } else {
             additionalProperties.put(CodegenConstants.SERIALIZABLE_MODEL, serializableModel);
         }
 
         if (additionalProperties.containsKey(CodegenConstants.PARCELIZE_MODELS)) {
-            this.setParcelizeModels(Boolean.valueOf((String) additionalProperties.get(CodegenConstants.PARCELIZE_MODELS)));
+            this.setParcelizeModels(convertPropertyToBooleanAndWriteBack(CodegenConstants.PARCELIZE_MODELS));
         } else {
             additionalProperties.put(CodegenConstants.PARCELIZE_MODELS, parcelizeModels);
         }
 
         if (additionalProperties.containsKey(CodegenConstants.NON_PUBLIC_API)) {
-            this.setNonPublicApi(Boolean.valueOf((String) additionalProperties.get(CodegenConstants.NON_PUBLIC_API)));
+            this.setNonPublicApi(convertPropertyToBooleanAndWriteBack(CodegenConstants.NON_PUBLIC_API));
         } else {
             additionalProperties.put(CodegenConstants.NON_PUBLIC_API, nonPublicApi);
         }
+
+        additionalProperties.put(CodegenConstants.SORT_PARAMS_BY_REQUIRED_FLAG, getSortParamsByRequiredFlag());
+        additionalProperties.put(CodegenConstants.SORT_MODEL_PROPERTIES_BY_REQUIRED_FLAG, getSortModelPropertiesByRequiredFlag());
 
         additionalProperties.put(CodegenConstants.API_PACKAGE, apiPackage());
         additionalProperties.put(CodegenConstants.MODEL_PACKAGE, modelPackage());
@@ -501,7 +495,7 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
     public void setSerializableModel(boolean serializableModel) {
         this.serializableModel = serializableModel;
     }
-    
+
     public boolean nonPublicApi() {
         return nonPublicApi;
     }
@@ -554,7 +548,7 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
                 modified = underscore(modified);
                 break;
             case UPPERCASE:
-                modified = modified.toUpperCase(Locale.ROOT);
+                modified = underscore(modified).toUpperCase(Locale.ROOT);
                 break;
         }
 
@@ -563,14 +557,6 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
         }
         // NOTE: another sanitize because camelize can create an invalid name
         return sanitizeKotlinSpecificNames(modified);
-    }
-
-    @Override
-    public String toInstantiationType(Schema p) {
-        if (ModelUtils.isArraySchema(p)) {
-            return getArrayTypeDeclaration((ArraySchema) p);
-        }
-        return super.toInstantiationType(p);
     }
 
     @Override
@@ -689,28 +675,6 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
     }
 
     /**
-     * Provides a strongly typed declaration for simple arrays of some type and arrays of arrays of some type.
-     *
-     * @param arr Array schema
-     * @return type declaration of array
-     */
-    private String getArrayTypeDeclaration(ArraySchema arr) {
-        // TODO: collection type here should be fully qualified namespace to avoid model conflicts
-        // This supports arrays of arrays.
-        String arrayType = typeMapping.get("array");
-        if (Boolean.TRUE.equals(arr.getUniqueItems())) {
-            arrayType = typeMapping.get("set");
-        }
-        StringBuilder instantiationType = new StringBuilder(arrayType);
-        Schema items = arr.getItems();
-        String nestedType = getTypeDeclaration(items);
-        additionalProperties.put("nestedType", nestedType);
-        // TODO: We may want to differentiate here between generics and primitive arrays.
-        instantiationType.append("<").append(nestedType).append(">");
-        return instantiationType.toString();
-    }
-
-    /**
      * Sanitize against Kotlin specific naming conventions, which may differ from those required by {@link DefaultCodegen#sanitizeName}.
      *
      * @param name string to be sanitize
@@ -787,7 +751,9 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
     @Override
     protected boolean needToImport(String type) {
         // provides extra protection against improperly trying to import language primitives and java types
-        boolean imports = !type.startsWith("kotlin.") && !type.startsWith("java.") && !defaultIncludes.contains(type) && !languageSpecificPrimitives.contains(type);
+        boolean imports = !type.startsWith("kotlin.") && !type.startsWith("java.") &&
+                !defaultIncludes.contains(type) && !languageSpecificPrimitives.contains(type) &&
+                !type.contains(".");
         return imports;
     }
 
@@ -795,7 +761,22 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
     public CodegenModel fromModel(String name, Schema schema) {
         CodegenModel m = super.fromModel(name, schema);
         m.optionalVars = m.optionalVars.stream().distinct().collect(Collectors.toList());
-        m.allVars.stream().filter(p -> !m.vars.contains(p)).forEach(p -> p.isInherited = true);
+        // Update allVars/requiredVars/optionalVars with isInherited
+        // Each of these lists contains elements that are similar, but they are all cloned
+        // via CodegenModel.removeAllDuplicatedProperty and therefore need to be updated
+        // separately.
+        // First find only the parent vars via baseName matching
+        Map<String, CodegenProperty> allVarsMap = m.allVars.stream()
+                .collect(Collectors.toMap(CodegenProperty::getBaseName, Function.identity()));
+        allVarsMap.keySet()
+                .removeAll(m.vars.stream().map(CodegenProperty::getBaseName).collect(Collectors.toSet()));
+        // Update the allVars
+        allVarsMap.values().forEach(p -> p.isInherited = true);
+        // Update any other vars (requiredVars, optionalVars)
+        Stream.of(m.requiredVars, m.optionalVars)
+                .flatMap(List::stream)
+                .filter(p -> allVarsMap.containsKey(p.baseName))
+                .forEach(p -> p.isInherited = true);
         return m;
     }
 
@@ -835,8 +816,8 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
     @Override
     public String toVarName(String name) {
         // sanitize name
-        name = sanitizeKotlinSpecificNames(name);
         name = sanitizeName(name, "\\W-[\\$]");
+        name = sanitizeKotlinSpecificNames(name);
 
         if (name.toLowerCase(Locale.ROOT).matches("^_*class$")) {
             return "propertyClass";
@@ -911,14 +892,17 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
                 } else {
                     LOGGER.info("Successfully executed: " + command);
                 }
-            } catch (Exception e) {
+            } catch (InterruptedException | IOException e) {
                 LOGGER.error("Error running the command ({}). Exception: {}", command, e.getMessage());
+                // Restore interrupted state
+                Thread.currentThread().interrupt();
             }
         }
     }
 
     @Override
-    public String toDefaultValue(Schema p) {
+    public String toDefaultValue(Schema schema) {
+        Schema p = ModelUtils.getReferencedSchema(this.openAPI, schema);
         if (ModelUtils.isBooleanSchema(p)) {
             if (p.getDefault() != null) {
                 return p.getDefault().toString();
@@ -941,8 +925,15 @@ public abstract class AbstractKotlinCodegen extends DefaultCodegen implements Co
             }
         } else if (ModelUtils.isStringSchema(p)) {
             if (p.getDefault() != null) {
-                return "'" + p.getDefault() + "'";
+                String _default = (String) p.getDefault();
+                if (p.getEnum() == null) {
+                    return "\"" + escapeText(_default) + "\"";
+                } else {
+                    // convert to enum var name later in postProcessModels
+                    return _default;
+                }
             }
+            return null;
         }
 
         return null;

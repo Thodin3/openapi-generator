@@ -12,7 +12,7 @@ Method | HTTP request | Description
 [**testBodyWithFileSchema**](FakeApi.md#testBodyWithFileSchema) | **PUT** /fake/body-with-file-schema | 
 [**testBodyWithQueryParams**](FakeApi.md#testBodyWithQueryParams) | **PUT** /fake/body-with-query-params | 
 [**testClientModel**](FakeApi.md#testClientModel) | **PATCH** /fake | To test \&quot;client\&quot; model
-[**testEndpointParameters**](FakeApi.md#testEndpointParameters) | **POST** /fake | Fake endpoint for testing various parameters 假端點 偽のエンドポイント 가짜 엔드 포인트 
+[**testEndpointParameters**](FakeApi.md#testEndpointParameters) | **POST** /fake | Fake endpoint for testing various parameters  假端點  偽のエンドポイント  가짜 엔드 포인트
 [**testEnumParameters**](FakeApi.md#testEnumParameters) | **GET** /fake | To test enum parameters
 [**testGroupParameters**](FakeApi.md#testGroupParameters) | **DELETE** /fake | Fake endpoint to test group parameters (optional)
 [**testInlineAdditionalProperties**](FakeApi.md#testInlineAdditionalProperties) | **POST** /fake/inline-additionalProperties | test inline additionalProperties
@@ -228,7 +228,7 @@ public class Example {
     defaultClient.setBasePath("http://petstore.swagger.io:80/v2");
 
     FakeApi apiInstance = new FakeApi(defaultClient);
-    BigDecimal body = new BigDecimal(); // BigDecimal | Input number as post body
+    BigDecimal body = new BigDecimal(78); // BigDecimal | Input number as post body
     try {
       BigDecimal result = apiInstance.fakeOuterNumberSerialize(body);
       System.out.println(result);
@@ -517,9 +517,9 @@ No authorization required
 # **testEndpointParameters**
 > testEndpointParameters(number, _double, patternWithoutDelimiter, _byte, integer, int32, int64, _float, string, binary, date, dateTime, password, paramCallback)
 
-Fake endpoint for testing various parameters 假端點 偽のエンドポイント 가짜 엔드 포인트 
+Fake endpoint for testing various parameters  假端點  偽のエンドポイント  가짜 엔드 포인트
 
-Fake endpoint for testing various parameters 假端點 偽のエンドポイント 가짜 엔드 포인트 
+Fake endpoint for testing various parameters  假端點  偽のエンドポイント  가짜 엔드 포인트
 
 ### Example
 ```java
@@ -542,7 +542,7 @@ public class Example {
     http_basic_test.setPassword("YOUR PASSWORD");
 
     FakeApi apiInstance = new FakeApi(defaultClient);
-    BigDecimal number = new BigDecimal(); // BigDecimal | None
+    BigDecimal number = new BigDecimal(78); // BigDecimal | None
     Double _double = 3.4D; // Double | None
     String patternWithoutDelimiter = "patternWithoutDelimiter_example"; // String | None
     byte[] _byte = null; // byte[] | None
@@ -553,7 +553,7 @@ public class Example {
     String string = "string_example"; // String | None
     File binary = new File("/path/to/file"); // File | None
     LocalDate date = new LocalDate(); // LocalDate | None
-    OffsetDateTime dateTime = new OffsetDateTime(); // OffsetDateTime | None
+    OffsetDateTime dateTime = OffsetDateTime.now(); // OffsetDateTime | None
     String password = "password_example"; // String | None
     String paramCallback = "paramCallback_example"; // String | None
     try {

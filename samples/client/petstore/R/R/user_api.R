@@ -18,7 +18,7 @@
 #' This can only be done by the logged in user.
 #'
 #' \itemize{
-#' \item \emph{ @param } body \link[petstore:User]{ User }
+#' \item \emph{ @param } body \link{User}
 #'
 #'
 #' \item status code : 0 | successful operation
@@ -34,7 +34,7 @@
 #' 
 #'
 #' \itemize{
-#' \item \emph{ @param } body list( \link[petstore:User]{ User } )
+#' \item \emph{ @param } body list( \link{User} )
 #'
 #'
 #' \item status code : 0 | successful operation
@@ -50,7 +50,7 @@
 #' 
 #'
 #' \itemize{
-#' \item \emph{ @param } body list( \link[petstore:User]{ User } )
+#' \item \emph{ @param } body list( \link{User} )
 #'
 #'
 #' \item status code : 0 | successful operation
@@ -90,7 +90,7 @@
 #'
 #' \itemize{
 #' \item \emph{ @param } username character
-#' \item \emph{ @returnType } \link[petstore:User]{ User }   \cr
+#' \item \emph{ @returnType } \link{User} \cr
 #'
 #'
 #' \item status code : 200 | successful operation
@@ -162,7 +162,7 @@
 #'
 #' \itemize{
 #' \item \emph{ @param } username character
-#' \item \emph{ @param } body \link[petstore:User]{ User }
+#' \item \emph{ @param } body \link{User}
 #'
 #'
 #' \item status code : 400 | Invalid user supplied
@@ -185,7 +185,7 @@
 #'
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #' ####################  CreateUser  ####################
 #'
 #' library(petstore)
@@ -277,7 +277,7 @@
 #'
 #' }
 #' @importFrom R6 R6Class
-#' @importFrom caTools base64encode
+#' @importFrom base64enc base64encode
 #' @export
 UserApi <- R6::R6Class(
   'UserApi',
@@ -460,6 +460,7 @@ UserApi <- R6::R6Class(
         stop("Missing required parameter `username`.")
       }
 
+      body <- NULL
       urlPath <- "/user/{username}"
       if (!missing(`username`)) {
         urlPath <- gsub(paste0("\\{", "username", "\\}"), URLencode(as.character(`username`), reserved = TRUE), urlPath)
@@ -506,6 +507,7 @@ UserApi <- R6::R6Class(
         stop("Missing required parameter `username`.")
       }
 
+      body <- NULL
       urlPath <- "/user/{username}"
       if (!missing(`username`)) {
         urlPath <- gsub(paste0("\\{", "username", "\\}"), URLencode(as.character(`username`), reserved = TRUE), urlPath)
@@ -521,7 +523,7 @@ UserApi <- R6::R6Class(
 
       if (httr::status_code(resp) >= 200 && httr::status_code(resp) <= 299) {
         deserializedRespObj <- tryCatch(
-          self$apiClient$deserialize(resp, "User", "package:petstore"),
+          self$apiClient$deserialize(resp, "User", loadNamespace("petstore")),
           error = function(e){
              stop("Failed to deserialize response")
           }
@@ -566,6 +568,7 @@ UserApi <- R6::R6Class(
 
       queryParams['password'] <- password
 
+      body <- NULL
       urlPath <- "/user/login"
 
       resp <- self$apiClient$CallApi(url = paste0(self$apiClient$basePath, urlPath),
@@ -577,7 +580,7 @@ UserApi <- R6::R6Class(
 
       if (httr::status_code(resp) >= 200 && httr::status_code(resp) <= 299) {
         deserializedRespObj <- tryCatch(
-          self$apiClient$deserialize(resp, "character", "package:petstore"),
+          self$apiClient$deserialize(resp, "character", loadNamespace("petstore")),
           error = function(e){
              stop("Failed to deserialize response")
           }
@@ -610,6 +613,7 @@ UserApi <- R6::R6Class(
       queryParams <- list()
       headerParams <- c()
 
+      body <- NULL
       urlPath <- "/user/logout"
 
       resp <- self$apiClient$CallApi(url = paste0(self$apiClient$basePath, urlPath),

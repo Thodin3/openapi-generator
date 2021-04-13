@@ -1,7 +1,6 @@
 import { NgModule, ModuleWithProviders, SkipSelf, Optional } from '@angular/core';
-import { Configuration } from './configuration';
+import { PetStoreConfiguration } from './configuration';
 import { HttpClient } from '@angular/common/http';
-
 
 import { PetService } from './api/pet.service';
 import { StoreService } from './api/store.service';
@@ -11,16 +10,13 @@ import { UserService } from './api/user.service';
   imports:      [],
   declarations: [],
   exports:      [],
-  providers: [
-    PetService,
-    StoreService,
-    UserService ]
+  providers: []
 })
 export class PetStoreApiModule {
-    public static forRoot(configurationFactory: () => Configuration): ModuleWithProviders {
+    public static forRoot(configurationFactory: () => PetStoreConfiguration): ModuleWithProviders {
         return {
             ngModule: PetStoreApiModule,
-            providers: [ { provide: Configuration, useFactory: configurationFactory } ]
+            providers: [ { provide: PetStoreConfiguration, useFactory: configurationFactory } ]
         };
     }
 

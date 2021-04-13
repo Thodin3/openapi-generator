@@ -1,5 +1,6 @@
 # Org.OpenAPITools.Model.ClassModel
-Model for testing model with \&quot;_class\&quot; property
+Model for testing model with \"_class\" property
+
 ## Properties
 
 Name | Type | Description | Notes
